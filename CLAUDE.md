@@ -33,6 +33,8 @@ Claude must preserve these boundaries:
 
 ## Verification
 
-Run `npm test` when dependencies are available. For frontend or API changes, also run `npm run build`.
+Run `npm run lint`, `npm test`, and `npm run build` when dependencies are available.
+
+GitHub Actions CI runs on every pull request targeting `main` and also validates `docker compose config`.
 
 If verification cannot run, report the exact blocker.
