@@ -1,0 +1,267 @@
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { Pool, type PoolClient } from 'pg';
+import type { BoardState, MatchStatus, MatchSummary, PieceColor } from '@chess-ledger/shared';
+
+import { AppConfigService } from '../../../../infrastructure/config/app-config.service';
+import type { MatchAggregate, ScoreboardEntry } from '../../domain/match.aggregate';
+import type { CreateMatchInput, MatchRepository } from '../../application/ports/match-repository.port';
+
+interface MatchRow {
+  readonly id: string;
+  readonly white_player_name: string;
+  readonly black_player_name: string;
+  readonly status: MatchStatus;
+  readonly winner: PieceColor | null;
+  readonly started_at: Date;
+  readonly ended_at: Date | null;
+  readonly duration_seconds: number | null;
+  readonly moves_count: number;
+  readonly board_state: BoardState | string;
+}
+
+interface ScoreboardRow {
+  readonly name: string;
+  readonly wins: number;
+  readonly losses: number;
+  readonly draws: number;
+  readonly matches: number;
+}
+
+@Injectable()
+export class PostgresMatchRepository implements MatchRepository, OnModuleInit, OnModuleDestroy {
+  private readonly pool: Pool;
+
+  constructor(config: AppConfigService) {
+    this.pool = new Pool({ connectionString: config.databaseUrl });
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.ensureSchema();
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.pool.end();
+  }
+
+  async create(input: CreateMatchInput): Promise<MatchAggregate> {
+    const id = randomUUID();
+    const client = await this.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      await this.ensurePlayer(client, input.whitePlayerName);
+      await this.ensurePlayer(client, input.blackPlayerName);
+
+      const result = await client.query<MatchRow>(
+        `insert into chess_matches (
+          id,
+          white_player_name,
+          black_player_name,
+          status,
+          started_at,
+          moves_count,
+          board_state
+        ) values ($1, $2, $3, $4, $5, $6, $7::jsonb)
+        returning *`,
+        [
+          id,
+          input.whitePlayerName,
+          input.blackPlayerName,
+          input.boardState.status,
+          new Date(input.startedAt),
+          input.boardState.history.length,
+          JSON.stringify(input.boardState)
+        ]
+      );
+
+      await client.query('COMMIT');
+      return this.mapMatchRow(this.requireSingleRow(result.rows));
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async findById(id: string): Promise<MatchAggregate | null> {
+    const result = await this.pool.query<MatchRow>('select * from chess_matches where id = $1', [id]);
+    const row = result.rows[0];
+    return row ? this.mapMatchRow(row) : null;
+  }
+
+  async save(match: MatchAggregate): Promise<MatchAggregate> {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      const previousResult = await client.query<MatchRow>('select * from chess_matches where id = $1 for update', [
+        match.id
+      ]);
+      const previous = this.requireSingleRow(previousResult.rows);
+      const updateResult = await client.query<MatchRow>(
+        `update chess_matches
+        set status = $2,
+            winner = $3,
+            ended_at = $4,
+            duration_seconds = $5,
+            moves_count = $6,
+            board_state = $7::jsonb,
+            updated_at = now()
+        where id = $1
+        returning *`,
+        [
+          match.id,
+          match.status,
+          match.winner ?? null,
+          match.endedAt ? new Date(match.endedAt) : null,
+          match.durationSeconds ?? null,
+          match.movesCount,
+          JSON.stringify(match.boardState)
+        ]
+      );
+
+      if (previous.status === 'active' && match.status !== 'active') {
+        await this.applyFinalScore(client, match);
+      }
+
+      await client.query('COMMIT');
+      return this.mapMatchRow(this.requireSingleRow(updateResult.rows));
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async listRecent(): Promise<readonly MatchSummary[]> {
+    const result = await this.pool.query<MatchRow>(
+      'select * from chess_matches order by started_at desc limit 50'
+    );
+    return result.rows.map((row) => this.mapMatchSummary(row));
+  }
+
+  async getScoreboard(): Promise<readonly ScoreboardEntry[]> {
+    const result = await this.pool.query<ScoreboardRow>(
+      `select name, wins, losses, draws, matches
+      from chess_players
+      order by wins desc, draws desc, losses asc, name asc`
+    );
+
+    return result.rows.map((row) => ({
+      playerName: row.name,
+      wins: Number(row.wins),
+      losses: Number(row.losses),
+      draws: Number(row.draws),
+      matches: Number(row.matches)
+    }));
+  }
+
+  private async ensureSchema(): Promise<void> {
+    await this.pool.query(`
+      create table if not exists chess_players (
+        name text primary key,
+        wins integer not null default 0,
+        losses integer not null default 0,
+        draws integer not null default 0,
+        matches integer not null default 0,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      );
+
+      create table if not exists chess_matches (
+        id uuid primary key,
+        white_player_name text not null references chess_players(name),
+        black_player_name text not null references chess_players(name),
+        status text not null,
+        winner text null,
+        started_at timestamptz not null,
+        ended_at timestamptz null,
+        duration_seconds integer null,
+        moves_count integer not null default 0,
+        board_state jsonb not null,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      );
+
+      create index if not exists chess_matches_started_at_idx on chess_matches(started_at desc);
+      create index if not exists chess_matches_status_idx on chess_matches(status);
+    `);
+  }
+
+  private async ensurePlayer(client: PoolClient, playerName: string): Promise<void> {
+    await client.query(
+      `insert into chess_players (name)
+      values ($1)
+      on conflict (name) do nothing`,
+      [playerName]
+    );
+  }
+
+  private async applyFinalScore(client: PoolClient, match: MatchAggregate): Promise<void> {
+    if (match.winner === 'white') {
+      await this.incrementPlayerStats(client, match.whitePlayerName, { wins: 1, matches: 1 });
+      await this.incrementPlayerStats(client, match.blackPlayerName, { losses: 1, matches: 1 });
+      return;
+    }
+
+    if (match.winner === 'black') {
+      await this.incrementPlayerStats(client, match.blackPlayerName, { wins: 1, matches: 1 });
+      await this.incrementPlayerStats(client, match.whitePlayerName, { losses: 1, matches: 1 });
+      return;
+    }
+
+    await this.incrementPlayerStats(client, match.whitePlayerName, { draws: 1, matches: 1 });
+    await this.incrementPlayerStats(client, match.blackPlayerName, { draws: 1, matches: 1 });
+  }
+
+  private async incrementPlayerStats(
+    client: PoolClient,
+    playerName: string,
+    values: Partial<Pick<ScoreboardEntry, 'wins' | 'losses' | 'draws' | 'matches'>>
+  ): Promise<void> {
+    await client.query(
+      `update chess_players
+      set wins = wins + $2,
+          losses = losses + $3,
+          draws = draws + $4,
+          matches = matches + $5,
+          updated_at = now()
+      where name = $1`,
+      [playerName, values.wins ?? 0, values.losses ?? 0, values.draws ?? 0, values.matches ?? 0]
+    );
+  }
+
+  private mapMatchRow(row: MatchRow): MatchAggregate {
+    const summary = this.mapMatchSummary(row);
+    return {
+      ...summary,
+      boardState: typeof row.board_state === 'string' ? (JSON.parse(row.board_state) as BoardState) : row.board_state
+    };
+  }
+
+  private mapMatchSummary(row: MatchRow): MatchSummary {
+    return {
+      id: row.id,
+      whitePlayerName: row.white_player_name,
+      blackPlayerName: row.black_player_name,
+      status: row.status,
+      ...(row.winner ? { winner: row.winner } : {}),
+      startedAt: row.started_at.toISOString(),
+      ...(row.ended_at ? { endedAt: row.ended_at.toISOString() } : {}),
+      ...(row.duration_seconds !== null ? { durationSeconds: Number(row.duration_seconds) } : {}),
+      movesCount: Number(row.moves_count)
+    };
+  }
+
+  private requireSingleRow<T>(rows: readonly T[]): T {
+    const row = rows[0];
+    if (!row) {
+      throw new Error('Expected database query to return one row.');
+    }
+
+    return row;
+  }
+}
