@@ -1,5 +1,7 @@
 # Chess With Ledger
 
+[![CI](https://github.com/teuzowebdeveloper9/chess-with-ledger/actions/workflows/ci.yml/badge.svg)](https://github.com/teuzowebdeveloper9/chess-with-ledger/actions/workflows/ci.yml)
+
 ## Project Overview
 
 Chess With Ledger is a local multiplayer chess system. Two players share the same screen: one controls white pieces, the other controls black pieces, alternating turns until the match ends.
@@ -26,6 +28,18 @@ The admin page at `/admin/ledger` is protected by a password configured in `.env
 - Relational/statistics database: PostgreSQL through Docker.
 - Tests: Jest with SWC.
 - Infra: Docker Compose.
+
+## Repository Quality Gates
+
+Every pull request targeting `main` runs GitHub Actions CI:
+
+- `npm ci`
+- `docker compose config`
+- `npm run lint`
+- `npm test`
+- `npm run build`
+
+The PR template also asks contributors to list the verification commands they ran locally.
 
 ## Architecture
 
@@ -127,10 +141,10 @@ The default admin password is documented in `.env.example`; change it in `.env`.
 ```env
 NODE_ENV=development
 API_PORT=3000
-FRONTEND_ORIGIN=http://localhost:5173
-VITE_API_BASE_URL=http://localhost:3000
+FRONTEND_ORIGIN=http://localhost:5174
+VITE_API_BASE_URL=http://localhost:3001
 
-DATABASE_URL=postgresql://chess:chess@localhost:5432/chess_ledger
+DATABASE_URL=postgresql://chess:chess@localhost:5433/chess_ledger
 
 DYNAMODB_ENDPOINT=http://localhost:8000
 DYNAMODB_REGION=us-east-1
@@ -210,5 +224,6 @@ Research summary:
 2. Implement domain/application behavior first.
 3. Add or update tests.
 4. Wire adapters and UI.
-5. Run `npm test` and `npm run build`.
+5. Run `npm run lint`, `npm test`, and `npm run build`.
 6. Push the branch and open a PR into `main`.
+7. Wait for CI to pass before merging.

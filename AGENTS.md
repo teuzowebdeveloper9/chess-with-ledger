@@ -34,7 +34,8 @@
 - Add or update Jest tests for domain/application behavior.
 - Mock infrastructure through ports/interfaces.
 - Do not test business behavior by importing database adapters.
-- Run `npm test` before declaring work complete when dependencies are installed.
+- Run `npm run lint`, `npm test`, and `npm run build` before declaring work complete when dependencies are installed.
+- CI runs these checks plus `docker compose config` on every pull request targeting `main`.
 
 ## Frontend Rules
 
@@ -50,3 +51,4 @@
 - Preserve user changes.
 - Keep docs updated when commands, architecture, env vars, or behavior changes.
 - Work on feature branches and open PRs into `main`.
+- Do not merge a PR until GitHub Actions CI is green.
