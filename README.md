@@ -1,6 +1,15 @@
 # Chess With Ledger
 
 [![CI](https://github.com/teuzowebdeveloper9/chess-with-ledger/actions/workflows/ci.yml/badge.svg)](https://github.com/teuzowebdeveloper9/chess-with-ledger/actions/workflows/ci.yml)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=1f2937)
+![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06b6d4?logo=tailwindcss&logoColor=white)
+![NestJS](https://img.shields.io/badge/NestJS-11-e0234e?logo=nestjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169e1?logo=postgresql&logoColor=white)
+![DynamoDB](https://img.shields.io/badge/DynamoDB_Local-ledger-4053d6?logo=amazondynamodb&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker_Compose-local_stack-2496ed?logo=docker&logoColor=white)
+![Jest](https://img.shields.io/badge/Jest-30-c21325?logo=jest&logoColor=white)
 
 ## Project Overview
 
