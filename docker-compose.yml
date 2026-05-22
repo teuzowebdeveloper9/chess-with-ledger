@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: chess
       POSTGRES_DB: chess_ledger
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -34,7 +34,7 @@ services:
     environment:
       NODE_ENV: development
       API_PORT: 3000
-      FRONTEND_ORIGIN: http://localhost:5173
+      FRONTEND_ORIGIN: http://localhost:5174
       DATABASE_URL: postgresql://chess:chess@postgres:5432/chess_ledger
       DYNAMODB_ENDPOINT: http://dynamodb-local:8000
       DYNAMODB_REGION: us-east-1
@@ -44,7 +44,7 @@ services:
       ADMIN_LEDGER_PASSWORD: ${ADMIN_LEDGER_PASSWORD:-senha_super_secreta}
       ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-local_admin_session_secret}
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,9 +57,9 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: chess-ledger-web
     environment:
-      VITE_API_BASE_URL: http://localhost:3000
+      VITE_API_BASE_URL: http://localhost:3001
     ports:
-      - "5173:5173"
+      - "5174:5173"
     depends_on:
       - api
 

@@ -102,9 +102,10 @@ npm run docker:up
 
 Open:
 
-- Web: `http://localhost:5173`
-- API: `http://localhost:3000`
-- Admin Ledger: `http://localhost:5173/admin/ledger`
+- Web: `http://localhost:5174`
+- API: `http://localhost:3001`
+- PostgreSQL: `localhost:5433`
+- Admin Ledger: `http://localhost:5174/admin/ledger`
 
 The default admin password is documented in `.env.example`; change it in `.env`.
 

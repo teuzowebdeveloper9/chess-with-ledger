@@ -16,7 +16,9 @@ export class AppConfigService {
   readonly adminLedgerPassword: string;
   readonly adminSessionSecret: string;
 
-  constructor(env: EnvReader = { get: (key) => process.env[key] }) {
+  constructor() {
+    const env = { get: (key: string) => process.env[key] };
+
     this.nodeEnv = env.get('NODE_ENV') ?? 'development';
     this.port = this.readNumber(env, 'API_PORT', 3000);
     this.frontendOrigin = env.get('FRONTEND_ORIGIN') ?? 'http://localhost:5173';
