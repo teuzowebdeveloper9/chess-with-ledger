@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: chess-ledger-postgres
+    environment:
+      POSTGRES_USER: chess
+      POSTGRES_PASSWORD: chess
+      POSTGRES_DB: chess_ledger
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chess -d chess_ledger"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: chess-ledger-dynamodb
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    working_dir: /home/dynamodblocal
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./docker/dynamodb:/home/dynamodblocal/data
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: chess-ledger-api
+    environment:
+      NODE_ENV: development
+      API_PORT: 3000
+      FRONTEND_ORIGIN: http://localhost:5174
+      DATABASE_URL: postgresql://chess:chess@postgres:5432/chess_ledger
+      DYNAMODB_ENDPOINT: http://dynamodb-local:8000
+      DYNAMODB_REGION: us-east-1
+      DYNAMODB_LEDGER_TABLE: ChessLedgerEvents
+      AWS_ACCESS_KEY_ID: localdev
+      AWS_SECRET_ACCESS_KEY: localdevsecret
+      ADMIN_LEDGER_PASSWORD: ${ADMIN_LEDGER_PASSWORD:-senha_super_secreta}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-local_admin_session_secret}
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dynamodb-local:
+        condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: chess-ledger-web
+    environment:
+      VITE_API_BASE_URL: http://localhost:3001
+    ports:
+      - "5174:5173"
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:

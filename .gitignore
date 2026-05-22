@@ -1,0 +1,12 @@
+node_modules/
+**/dist/
+coverage/
+*.tsbuildinfo
+packages/shared/src/**/*.js
+packages/shared/src/**/*.d.ts
+packages/shared/src/**/*.js.map
+.env
+.env.local
+npm-debug.log*
+docker/dynamodb/*
+!docker/dynamodb/.gitkeep

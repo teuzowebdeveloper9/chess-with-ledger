@@ -1,0 +1,42 @@
+{
+  "name": "chess-with-ledger",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local multiplayer chess with an immutable DynamoDB ledger and PostgreSQL match statistics.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @chess-ledger/shared && npm run build --workspace @chess-ledger/api && npm run build --workspace @chess-ledger/web",
+    "build:shared": "npm run build --workspace @chess-ledger/shared",
+    "dev": "npm run build:shared && concurrently -n api,web \"npm run start:dev --workspace @chess-ledger/api\" \"npm run dev --workspace @chess-ledger/web\"",
+    "dev:api": "npm run build:shared && npm run start:dev --workspace @chess-ledger/api",
+    "dev:web": "npm run build:shared && npm run dev --workspace @chess-ledger/web",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.13.0",
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "^30.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.33.0",
+    "@typescript-eslint/parser": "^8.33.0",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.28.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "jest": "^30.4.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=20.19.0",
+    "npm": ">=10.0.0"
+  }
+}
