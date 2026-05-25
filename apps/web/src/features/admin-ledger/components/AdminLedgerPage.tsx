@@ -1,11 +1,16 @@
 import { ArrowLeft, LogOut, RefreshCw } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 import { useAdminLedger } from '../hooks/useAdminLedger';
+import { defaultLedgerFilters, filterLedgerEvents } from '../utils/ledgerFilters';
 import { AdminLogin } from './AdminLogin';
+import { LedgerFilters } from './LedgerFilters';
 import { LedgerTimeline } from './LedgerTimeline';
 
 export function AdminLedgerPage() {
   const { events, isAuthenticated, isLoading, error, login, logout, refresh } = useAdminLedger();
+  const [filters, setFilters] = useState(defaultLedgerFilters);
+  const filteredEvents = useMemo(() => filterLedgerEvents(events, filters), [events, filters]);
 
   if (!isAuthenticated) {
     return <AdminLogin error={error} isLoading={isLoading} onLogin={login} />;
@@ -15,7 +20,7 @@ export function AdminLedgerPage() {
     <main className="mx-auto min-h-screen w-full max-w-[1180px] bg-[#f5f6f1] bg-[linear-gradient(180deg,rgba(47,111,78,0.08),transparent_260px)] p-3 text-stone-950 sm:p-6">
       <header className="mb-5 flex flex-col gap-5 rounded-lg border border-stone-900/10 bg-white/80 px-5 py-4 shadow-[0_18px_48px_rgba(23,25,24,0.12)] sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <span className="mb-1 block text-xs font-bold tracking-[0.08em] text-[#184a34] uppercase">Livro verdade</span>
+          <span className="mb-1 block text-xs font-bold text-[#184a34] uppercase">Livro verdade</span>
           <h1 className="text-[28px] leading-tight font-bold tracking-normal">Ledger administrativo</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
@@ -51,7 +56,17 @@ export function AdminLedgerPage() {
           {error}
         </div>
       ) : null}
-      <LedgerTimeline events={events} />
+      <LedgerFilters
+        events={events}
+        filteredCount={filteredEvents.length}
+        filters={filters}
+        onChange={setFilters}
+        onReset={() => setFilters(defaultLedgerFilters)}
+      />
+      <LedgerTimeline
+        events={filteredEvents}
+        emptyMessage={events.length === 0 ? 'Nenhum evento registrado no ledger.' : 'Nenhum evento encontrado para os filtros ativos.'}
+      />
     </main>
   );
 }
