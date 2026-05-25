@@ -2,7 +2,7 @@
   "name": "chess-with-ledger",
   "version": "0.1.0",
   "private": true,
-  "description": "Local multiplayer chess with an immutable DynamoDB ledger and PostgreSQL match statistics.",
+  "description": "Local and online multiplayer chess with an immutable DynamoDB ledger and PostgreSQL match statistics.",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -10,6 +10,7 @@
   "scripts": {
     "build": "npm run build --workspace @chess-ledger/shared && npm run build --workspace @chess-ledger/api && npm run build --workspace @chess-ledger/web",
     "build:shared": "npm run build --workspace @chess-ledger/shared",
+    "typecheck": "npm run build:shared && npm run typecheck --workspace @chess-ledger/api && npm run typecheck --workspace @chess-ledger/web",
     "dev": "npm run build:shared && concurrently -n api,web \"npm run start:dev --workspace @chess-ledger/api\" \"npm run dev --workspace @chess-ledger/web\"",
     "dev:api": "npm run build:shared && npm run start:dev --workspace @chess-ledger/api",
     "dev:web": "npm run build:shared && npm run dev --workspace @chess-ledger/web",

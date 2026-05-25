@@ -8,9 +8,13 @@ export type BoardSquare = `${BoardFile}${BoardRank}`;
 export type PieceColor = 'white' | 'black';
 export type PieceType = 'pawn' | 'knight' | 'bishop' | 'rook' | 'queen' | 'king';
 export type PromotionPieceType = 'queen' | 'rook' | 'bishop' | 'knight';
+export type MatchMode = 'local' | 'online';
 export type MatchStatus = 'active' | 'checkmate' | 'stalemate' | 'draw' | 'aborted';
 export type LedgerEventType =
   | 'MATCH_STARTED'
+  | 'ONLINE_ROOM_CREATED'
+  | 'ONLINE_PLAYER_JOINED'
+  | 'ONLINE_MATCH_STARTED'
   | 'MOVE_RECORDED'
   | 'PIECE_CAPTURED'
   | 'CHECK_DECLARED'
@@ -75,6 +79,7 @@ export interface MovePieceRequest {
   readonly from: BoardSquare;
   readonly to: BoardSquare;
   readonly promotion?: PromotionPieceType;
+  readonly playerToken?: string;
 }
 
 export interface StartLocalMatchRequest {
@@ -82,8 +87,32 @@ export interface StartLocalMatchRequest {
   readonly blackPlayerName?: string;
 }
 
+export interface CreateOnlineMatchRequest {
+  readonly whitePlayerName?: string;
+}
+
+export interface JoinOnlineMatchRequest {
+  readonly roomCode: string;
+  readonly blackPlayerName?: string;
+}
+
+export interface OnlineMatchPlayer {
+  readonly id: string;
+  readonly color: PieceColor;
+  readonly name: string;
+  readonly joinedAt: string;
+}
+
+export interface OnlineMatchState {
+  readonly roomCode: string;
+  readonly hasStarted: boolean;
+  readonly whitePlayer: OnlineMatchPlayer;
+  readonly blackPlayer?: OnlineMatchPlayer;
+}
+
 export interface MatchView {
   readonly id: string;
+  readonly mode: MatchMode;
   readonly whitePlayerName: string;
   readonly blackPlayerName: string;
   readonly status: MatchStatus;
@@ -93,10 +122,12 @@ export interface MatchView {
   readonly durationSeconds?: number;
   readonly movesCount: number;
   readonly boardState: BoardState;
+  readonly online?: OnlineMatchState;
 }
 
 export interface MatchSummary {
   readonly id: string;
+  readonly mode: MatchMode;
   readonly whitePlayerName: string;
   readonly blackPlayerName: string;
   readonly status: MatchStatus;
@@ -105,6 +136,7 @@ export interface MatchSummary {
   readonly endedAt?: string;
   readonly durationSeconds?: number;
   readonly movesCount: number;
+  readonly online?: Pick<OnlineMatchState, 'roomCode' | 'hasStarted'>;
 }
 
 export interface LedgerEventPayload {
@@ -133,6 +165,22 @@ export interface AdminSessionRequest {
 export interface AdminSessionResponse {
   readonly token: string;
   readonly expiresAt: string;
+}
+
+export interface OnlineMatchSession {
+  readonly match: MatchView;
+  readonly roomCode: string;
+  readonly playerColor: PieceColor;
+  readonly playerToken: string;
+}
+
+export interface WatchOnlineMatchRequest {
+  readonly matchId: string;
+  readonly playerToken: string;
+}
+
+export interface OnlineMatchUpdatedEvent {
+  readonly match: MatchView;
 }
 
 export interface ApiErrorResponse {

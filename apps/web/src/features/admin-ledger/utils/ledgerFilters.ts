@@ -2,6 +2,9 @@ import type { LedgerEventType, LedgerEventView } from '@chess-ledger/shared';
 
 export const LEDGER_EVENT_TYPES = [
   'MATCH_STARTED',
+  'ONLINE_ROOM_CREATED',
+  'ONLINE_PLAYER_JOINED',
+  'ONLINE_MATCH_STARTED',
   'MOVE_RECORDED',
   'PIECE_CAPTURED',
   'CHECK_DECLARED',
@@ -13,6 +16,9 @@ export const LEDGER_EVENT_TYPES = [
 
 export const ledgerEventTypeLabels: Record<LedgerEventType, string> = {
   MATCH_STARTED: 'Partida iniciada',
+  ONLINE_ROOM_CREATED: 'Sala online criada',
+  ONLINE_PLAYER_JOINED: 'Jogador entrou',
+  ONLINE_MATCH_STARTED: 'Online iniciada',
   MOVE_RECORDED: 'Movimento',
   PIECE_CAPTURED: 'Captura',
   CHECK_DECLARED: 'Xeque',
@@ -54,7 +60,7 @@ export const defaultLedgerFilters: LedgerFilterState = {
 const eventTypesByQuickFilter: Record<Exclude<LedgerQuickFilter, 'all'>, readonly LedgerEventType[]> = {
   moves: ['MOVE_RECORDED', 'CASTLING_PERFORMED', 'PAWN_PROMOTED'],
   captures: ['PIECE_CAPTURED'],
-  critical: ['CHECK_DECLARED', 'MATCH_FINISHED'],
+  critical: ['CHECK_DECLARED', 'MATCH_FINISHED', 'ONLINE_ROOM_CREATED', 'ONLINE_MATCH_STARTED'],
   snapshots: ['SNAPSHOT_RECORDED']
 };
 

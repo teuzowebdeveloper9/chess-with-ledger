@@ -1,7 +1,13 @@
-import type { BoardState, MatchStatus, PieceColor } from '@chess-ledger/shared';
+import type { BoardState, MatchMode, MatchStatus, OnlineMatchState, PieceColor } from '@chess-ledger/shared';
+
+export interface OnlineMatchPrivateState extends OnlineMatchState {
+  readonly whitePlayerToken: string;
+  readonly blackPlayerToken?: string;
+}
 
 export interface MatchAggregate {
   readonly id: string;
+  readonly mode: MatchMode;
   readonly whitePlayerName: string;
   readonly blackPlayerName: string;
   readonly status: MatchStatus;
@@ -11,6 +17,7 @@ export interface MatchAggregate {
   readonly winner?: PieceColor;
   readonly movesCount: number;
   readonly boardState: BoardState;
+  readonly online?: OnlineMatchPrivateState;
 }
 
 export interface ScoreboardEntry {

@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, Matches } from 'class-validator';
+import { IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import type { BoardSquare, MovePieceRequest, PromotionPieceType } from '@chess-ledger/shared';
 
 export class MovePieceDto implements MovePieceRequest {
@@ -11,4 +11,10 @@ export class MovePieceDto implements MovePieceRequest {
   @IsOptional()
   @IsIn(['queen', 'rook', 'bishop', 'knight'])
   promotion?: PromotionPieceType;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(12)
+  @MaxLength(40)
+  playerToken?: string;
 }
