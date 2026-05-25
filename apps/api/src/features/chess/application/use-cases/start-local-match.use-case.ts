@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { MatchView } from '@chess-ledger/shared';
 
+import { toMatchView } from '../mappers/match-view.mapper';
 import { CHESS_RULES_ENGINE, type ChessRulesEngine } from '../ports/chess-rules-engine.port';
 import { LEDGER_REPOSITORY, type LedgerRepository } from '../ports/ledger-repository.port';
 import { MATCH_REPOSITORY, type MatchRepository } from '../ports/match-repository.port';
@@ -22,6 +23,7 @@ export class StartLocalMatchUseCase {
     const startedAt = new Date().toISOString();
     const boardState = this.chessRules.createInitialState();
     const match = await this.matches.create({
+      mode: 'local',
       whitePlayerName: input.whitePlayerName?.trim() || 'Jogador branco',
       blackPlayerName: input.blackPlayerName?.trim() || 'Jogador preto',
       boardState,
@@ -42,6 +44,6 @@ export class StartLocalMatchUseCase {
       }
     ]);
 
-    return match;
+    return toMatchView(match);
   }
 }

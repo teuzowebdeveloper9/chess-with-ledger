@@ -3,6 +3,7 @@ import type { LedgerEventView } from '@chess-ledger/shared';
 import type { MatchAggregate } from '../../domain/match.aggregate';
 import { ChessJsRulesEngine } from '../../infrastructure/rules/chess-js-rules.engine';
 import type { LedgerRepository } from '../ports/ledger-repository.port';
+import type { MatchRealtimePublisher } from '../ports/match-realtime-publisher.port';
 import type { MatchRepository } from '../ports/match-repository.port';
 import { MovePieceUseCase } from './move-piece.use-case';
 
@@ -11,6 +12,7 @@ describe('MovePieceUseCase', () => {
     const engine = new ChessJsRulesEngine();
     const match: MatchAggregate = {
       id: 'match-1',
+      mode: 'local',
       whitePlayerName: 'Ada',
       blackPlayerName: 'Grace',
       status: 'active',
@@ -24,6 +26,7 @@ describe('MovePieceUseCase', () => {
     const matches: MatchRepository = {
       create: jest.fn(),
       findById: jest.fn(async () => match),
+      findByOnlineRoomCode: jest.fn(),
       save: jest.fn(async (updated) => {
         savedMatch = updated;
         return updated;
@@ -38,8 +41,11 @@ describe('MovePieceUseCase', () => {
       }),
       list: jest.fn()
     };
+    const realtime: MatchRealtimePublisher = {
+      publishMatchUpdated: jest.fn()
+    };
 
-    const useCase = new MovePieceUseCase(engine, matches, ledger);
+    const useCase = new MovePieceUseCase(engine, matches, ledger, realtime);
 
     const result = await useCase.execute(match.id, { from: 'e2', to: 'e4' });
 

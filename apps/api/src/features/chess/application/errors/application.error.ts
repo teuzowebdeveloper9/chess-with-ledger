@@ -28,6 +28,30 @@ export class InvalidChessMoveError extends ApplicationError {
   }
 }
 
+export class OnlineRoomNotFoundError extends ApplicationError {
+  constructor(roomCode: string) {
+    super('ONLINE_ROOM_NOT_FOUND', `Online room ${roomCode} was not found.`, 404);
+  }
+}
+
+export class OnlineRoomAlreadyStartedError extends ApplicationError {
+  constructor(roomCode: string) {
+    super('ONLINE_ROOM_ALREADY_STARTED', `Online room ${roomCode} already has two players.`, 409);
+  }
+}
+
+export class OnlineMatchNotStartedError extends ApplicationError {
+  constructor(matchId: string) {
+    super('ONLINE_MATCH_NOT_STARTED', `Online match ${matchId} is waiting for the second player.`, 409);
+  }
+}
+
+export class InvalidOnlinePlayerError extends ApplicationError {
+  constructor(details: unknown) {
+    super('INVALID_ONLINE_PLAYER', 'This online player cannot make the requested move.', 403, details);
+  }
+}
+
 export class InvalidAdminPasswordError extends ApplicationError {
   constructor() {
     super('INVALID_ADMIN_PASSWORD', 'Invalid admin password.', 401);

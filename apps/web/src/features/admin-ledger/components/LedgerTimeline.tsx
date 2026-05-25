@@ -7,6 +7,7 @@ import {
   Database,
   Flag,
   ListTree,
+  RadioTower,
   ShieldAlert,
   ShieldCheck,
   Swords
@@ -51,6 +52,21 @@ const eventPresentationByType: Record<LedgerEventType, EventPresentation> = {
     Icon: Flag,
     iconClass: 'bg-emerald-50 text-emerald-700',
     badgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-800'
+  },
+  ONLINE_ROOM_CREATED: {
+    Icon: RadioTower,
+    iconClass: 'bg-blue-50 text-blue-700',
+    badgeClass: 'border-blue-200 bg-blue-50 text-blue-800'
+  },
+  ONLINE_PLAYER_JOINED: {
+    Icon: Swords,
+    iconClass: 'bg-cyan-50 text-cyan-700',
+    badgeClass: 'border-cyan-200 bg-cyan-50 text-cyan-800'
+  },
+  ONLINE_MATCH_STARTED: {
+    Icon: RadioTower,
+    iconClass: 'bg-[#172554] text-white',
+    badgeClass: 'border-[#172554] bg-[#172554] text-white'
   },
   MOVE_RECORDED: {
     Icon: ListTree,

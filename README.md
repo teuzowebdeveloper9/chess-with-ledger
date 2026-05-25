@@ -13,11 +13,14 @@
 
 ## Project Overview
 
-Chess With Ledger is a local multiplayer chess system. Two players share the same screen: one controls white pieces, the other controls black pieces, alternating turns until the match ends.
+Chess With Ledger supports local and online multiplayer chess. In local mode, two players share the same screen. In online mode, the first player creates a private room code and waits until a second player joins from another browser.
 
 The main product difference is the immutable Ledger. Every match action creates chronological Ledger events:
 
 - match started
+- online room created
+- online player joined
+- online match started
 - piece moved
 - capture
 - check
@@ -32,6 +35,7 @@ The admin page at `/admin/ledger` is protected by a password configured in `.env
 
 - Frontend: React, Vite, TypeScript, Tailwind CSS, `react-icons`, Lucide icons.
 - Backend: NestJS, TypeScript, Clean Architecture, DTO validation.
+- Realtime: Socket.IO through a NestJS WebSocket gateway.
 - Chess rules: `chess.js` behind an application port.
 - Ledger database: DynamoDB Local through Docker.
 - Relational/statistics database: PostgreSQL through Docker.
@@ -45,6 +49,7 @@ Every pull request targeting `main` runs GitHub Actions CI:
 - `npm ci`
 - `docker compose config`
 - `npm run lint`
+- `npm run typecheck`
 - `npm test`
 - `npm run build`
 
@@ -140,6 +145,7 @@ The default admin password is documented in `.env.example`; change it in `.env`.
 - `npm run docker:up`: builds and starts web, API, PostgreSQL, and DynamoDB Local.
 - `npm run docker:down`: stops the Docker stack.
 - `npm run build`: builds all workspaces.
+- `npm run typecheck`: runs TypeScript checks for the API and web app after building shared contracts.
 - `npm test`: runs Jest tests.
 - `npm run test:watch`: runs Jest in watch mode.
 - `npm run test:coverage`: runs Jest with coverage.
@@ -168,6 +174,8 @@ ADMIN_SESSION_SECRET=local_admin_session_secret
 ## API Summary
 
 - `POST /matches`: starts a local match.
+- `POST /matches/online`: creates an online room and returns a room code plus the white player's session token.
+- `POST /matches/online/:roomCode/join`: joins an online room as black and starts the online match.
 - `GET /matches`: lists recent matches.
 - `GET /matches/scoreboard`: returns scoreboard data.
 - `GET /matches/:matchId`: returns a full match JSON state.
@@ -178,6 +186,8 @@ ADMIN_SESSION_SECRET=local_admin_session_secret
 ## Frontend Notes
 
 The board renders from `BoardState` JSON returned by the backend. React components do not own chess rules.
+
+The root page lets the player choose between local and online mode. Online rooms use Socket.IO only for live match updates; legal move validation and Ledger writes still go through backend use cases.
 
 UI styling uses Tailwind utility classes in JSX. The only frontend CSS file is the Tailwind entrypoint:
 

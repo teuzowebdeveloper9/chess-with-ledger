@@ -28,31 +28,13 @@ export class DynamoDbLedgerRepository implements LedgerRepository, OnModuleInit 
   }
 
   async append(matchId: string, events: readonly LedgerEventDraft[]): Promise<readonly LedgerEventView[]> {
-    const existingEvents = await this.list(matchId);
-    let nextSequence = existingEvents.length + 1;
+    let nextSequence = await this.nextSequenceForMatch(matchId);
     const savedEvents: LedgerEventView[] = [];
 
     for (const event of events) {
-      const ledgerEvent: LedgerEventView = {
-        id: randomUUID(),
-        matchId,
-        sequence: nextSequence,
-        ...event
-      };
-
-      await this.client.send(
-        new PutCommand({
-          TableName: this.tableName,
-          Item: ledgerEvent,
-          ConditionExpression: 'attribute_not_exists(matchId) and attribute_not_exists(#sequence)',
-          ExpressionAttributeNames: {
-            '#sequence': 'sequence'
-          }
-        })
-      );
-
+      const ledgerEvent = await this.appendOne(matchId, event, nextSequence);
       savedEvents.push(ledgerEvent);
-      nextSequence += 1;
+      nextSequence = ledgerEvent.sequence + 1;
     }
 
     return savedEvents;
@@ -105,5 +87,55 @@ export class DynamoDbLedgerRepository implements LedgerRepository, OnModuleInit 
         BillingMode: 'PAY_PER_REQUEST'
       })
     );
+  }
+
+  private async appendOne(
+    matchId: string,
+    event: LedgerEventDraft,
+    initialSequence: number
+  ): Promise<LedgerEventView> {
+    let nextSequence = initialSequence;
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const ledgerEvent: LedgerEventView = {
+        id: randomUUID(),
+        matchId,
+        sequence: nextSequence,
+        ...event
+      };
+
+      try {
+        await this.client.send(
+          new PutCommand({
+            TableName: this.tableName,
+            Item: ledgerEvent,
+            ConditionExpression: 'attribute_not_exists(matchId) and attribute_not_exists(#sequence)',
+            ExpressionAttributeNames: {
+              '#sequence': 'sequence'
+            }
+          })
+        );
+
+        return ledgerEvent;
+      } catch (error) {
+        if (!this.isConditionalCheckFailed(error)) {
+          throw error;
+        }
+
+        nextSequence = await this.nextSequenceForMatch(matchId);
+      }
+    }
+
+    throw new Error(`Could not append ledger event for match ${matchId} after sequence retries.`);
+  }
+
+  private async nextSequenceForMatch(matchId: string): Promise<number> {
+    const existingEvents = await this.list(matchId);
+    const lastSequence = existingEvents.reduce((max, event) => Math.max(max, event.sequence), 0);
+    return lastSequence + 1;
+  }
+
+  private isConditionalCheckFailed(error: unknown): boolean {
+    return error instanceof Error && error.name === 'ConditionalCheckFailedException';
   }
 }
